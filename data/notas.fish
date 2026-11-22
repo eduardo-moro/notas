@@ -1,0 +1,11 @@
+complete -c notas -s h -l help -d 'mostra a ajuda'
+complete -c notas -s v -l version -d 'mostra a versão'
+complete -c notas -s l -l list -d 'lista as notas abertas'
+complete -c notas -s p -l print -x -d 'escreve a nota na saída padrão' \
+    -a '(notas --list 2>/dev/null | string replace -r "^(\d+)\t[^\t]*\t(.*)" "\$1\t\$2")'
+complete -c notas -l path -d 'mostra a pasta das notas'
+complete -c notas -s n -l new -d 'abre uma aba vazia'
+complete -c notas -s t -l text -x -d 'cria uma nota com o texto'
+complete -c notas -l settings -d 'abre as configurações'
+complete -c notas -l notes-dir -x -a '(__fish_complete_directories)' -d 'pasta das notas nesta execução'
+complete -c notas -l config -r -F -d 'arquivo de configuração'

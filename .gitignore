@@ -1,0 +1,6 @@
+build/
+*.o
+moc_*
+.qmake.stash
+compile_commands.json
+.cache/

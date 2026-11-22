@@ -1,0 +1,128 @@
+.TH NOTAS 1 "novembro de 2026" "notas 1.0.0" "Comandos do usuário"
+.SH NOME
+notas \- bloco de notas minimalista com abas e salvamento automático
+.SH SINOPSE
+.B notas
+[\fIopções\fR] [\fIarquivo\fR...]
+.SH DESCRIÇÃO
+.B notas
+é um editor de texto puro, sem markdown nem menus. Cada aba é um arquivo
+\fB.txt\fR na pasta das notas, salvo automaticamente após um período de
+inatividade. As abas persistem entre execuções até serem fechadas com
+\fBCtrl+W\fR ou no \fB×\fR da aba.
+.PP
+Só existe uma instância por usuário: se já houver uma janela aberta, uma nova
+invocação repassa seus argumentos para ela e termina.
+.PP
+Arquivos de texto colocados na pasta das notas por outros programas viram abas
+na próxima vez que ela for carregada.
+.SH OPÇÕES
+.TP
+.BR \-l ", " \-\-list
+Lista as notas: índice, id e título, separados por TAB.
+.TP
+.BR \-p ", " \-\-print " \fInota\fR"
+Escreve o conteúdo da nota na saída padrão. \fInota\fR é o id ou o índice
+mostrado por \fB\-\-list\fR.
+.TP
+.B \-\-path
+Mostra a pasta das notas.
+.TP
+.BR \-n ", " \-\-new
+Abre uma aba vazia.
+.TP
+.BR \-t ", " \-\-text " \fItexto\fR"
+Cria uma nota com \fItexto\fR. Pode ser repetida.
+.TP
+.B \-\-settings
+Abre o painel de configurações.
+.TP
+.BI \-\-notes\-dir " pasta"
+Usa \fIpasta\fR nesta execução, sem alterar a configuração.
+.TP
+.BI \-\-config " arquivo"
+Lê a configuração de \fIarquivo\fR.
+.TP
+.B \-
+Lê a entrada padrão para uma nota nova.
+.TP
+.BR \-h ", " \-\-help
+Mostra a ajuda.
+.TP
+.BR \-v ", " \-\-version
+Mostra a versão.
+.SH ATALHOS
+Ctrl+T, Ctrl+N nova aba; Ctrl+W fechar; Ctrl+Shift+T reabrir aba fechada;
+Ctrl+Tab/Ctrl+PgDn e Ctrl+Shift+Tab/Ctrl+PgUp trocar de aba;
+Ctrl+Shift+PgUp/PgDn mover aba; Alt+1..9 ir para aba.
+.PP
+Alt+Shift+\(ua/\(da adiciona cursor; Alt+Clique adiciona ou remove cursor;
+Esc remove os cursores extras; Ctrl+D seleciona a próxima ocorrência;
+Ctrl+Shift+L seleciona todas.
+.PP
+Alt+\(ua/\(da move linhas; Ctrl+Shift+Alt+\(ua/\(da duplica; Ctrl+Shift+K apaga;
+Ctrl+L seleciona a linha; Ctrl+Enter e Ctrl+Shift+Enter inserem linha abaixo e
+acima; Tab e Shift+Tab indentam; Ctrl+] e Ctrl+[ indentam a linha.
+Ctrl+C e Ctrl+X sem seleção copiam ou cortam a linha inteira.
+.PP
+Ctrl+F busca (Enter próximo, Shift+Enter anterior, Alt+Enter seleciona todas as
+ocorrências como cursores); F3 e Shift+F3. Ctrl+= Ctrl+\- Ctrl+0 e Ctrl+roda
+para zoom. Ctrl+S salva agora. Ctrl+, abre as configurações; Ctrl+Shift+,
+abre o \fIconfig.json\fR numa aba. Ctrl+Q sai.
+.SH ARQUIVOS
+.TP
+.I $XDG_CONFIG_HOME/notas/config.json
+Configuração em JSON. É recarregada assim que muda no disco, e o painel do
+Ctrl+, escreve nela. Chaves desconhecidas são preservadas. Se o arquivo tiver
+erro de sintaxe, o aviso vai para stderr e a última configuração válida
+continua valendo.
+.RS
+.nf
+{
+  "notesDir": "~/Notas",
+  "autosaveMs": 1000,
+  "font": { "family": "monospace", "size": 11 },
+  "padding": { "horizontal": 28, "vertical": 14 },
+  "indent": { "width": 4, "spaces": false, "auto": true },
+  "wordWrap": true,
+  "theme": { "mode": "auto", "dark": "gruvbox-dark", "light": "gruvbox-light" },
+  "radius": { "window": 12, "elements": 8 },
+  "onClose": "archive"
+}
+.fi
+.RE
+.IP
+\fBtheme.mode\fR aceita \fBauto\fR (segue \fI~/.config/hypr/.current-theme\fR),
+\fBdark\fR, \fBlight\fR, o nome de um tema ou o caminho de um \fB.json\fR.
+\fBradius.window\fR é o raio dos cantos da janela (0 = cantos retos, útil quando
+o compositor já arredonda); \fBradius.elements\fR vale para abas, painel e busca.
+\fBonClose\fR aceita \fBarchive\fR (move para \fI.fechadas/\fR) ou \fBdelete\fR.
+Quando \fBnotesDir\fR é alterado à mão, a troca só acontece se a pasta já existir.
+Pelo painel, as notas são movidas para a nova pasta.
+.TP
+.I $XDG_CONFIG_HOME/notas/themes/*.json
+Temas. Na primeira execução são gerados \fIgruvbox-dark.json\fR e
+\fIgruvbox-light.json\fR a partir de \fI~/gruvbox_theme.css\fR. Cores aceitam
+#RGB, #RRGGBB e #RRGGBBAA. Papéis: base, card, surface, surface2, surface3,
+hover, text, textStrong, muted, accent, cursor, selection, search. A chave
+opcional \fBcss\fR é anexada à folha de estilo Qt.
+.TP
+.I <notesDir>/*.txt
+As notas, uma por arquivo, em UTF-8.
+.TP
+.I <notesDir>/.session.json
+Ordem das abas, aba atual, posição do cursor e lista de notas fechadas.
+.TP
+.I <notesDir>/.fechadas/
+Notas fechadas, que podem ser reabertas com Ctrl+Shift+T.
+.SH SINAIS
+SIGTERM, SIGINT e SIGHUP salvam todas as abas e a sessão antes de sair.
+.SH STATUS DE SAÍDA
+0 em caso de sucesso, 1 em caso de erro (opção inválida, nota inexistente).
+.SH EXEMPLOS
+.nf
+echo "ligar pro banco" | notas \-
+notas \-t "comprar café"
+notas \-p 1 | wc \-l
+grep \-ril senha "$(notas \-\-path)"
+.fi

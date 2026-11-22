@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Notas
+GenericName=Bloco de notas
+Comment=Bloco de notas minimalista com abas e salvamento automático
+Exec=notas %F
+Icon=accessories-text-editor
+Terminal=false
+Categories=Utility;TextEditor;
+MimeType=text/plain;
+StartupWMClass=notas
