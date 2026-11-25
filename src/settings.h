@@ -44,6 +44,7 @@ struct AppSettings {
     int windowRadius = 12;  // corners of the window itself
     int elementRadius = 8;  // tabs, panels, find bar
     bool deleteOnClose = false;
+    bool markdown = true; // live-preview markdown (WYSIWYG)
 
     // Loads config.json; writes a default one if missing.
     // Returns false (and fills error) on a syntax error; values stay at defaults/previous.

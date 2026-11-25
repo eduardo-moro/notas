@@ -1,4 +1,4 @@
-.TH NOTAS 1 "novembro de 2026" "notas 1.1.0" "Comandos do usuário"
+.TH NOTAS 1 "novembro de 2026" "notas 1.2.0" "Comandos do usuário"
 .SH NOME
 notas \- bloco de notas minimalista com abas e salvamento automático
 .SH SINOPSE
@@ -70,6 +70,15 @@ Ctrl+F busca (Enter próximo, Shift+Enter anterior, Alt+Enter seleciona todas as
 ocorrências como cursores); F3 e Shift+F3. Ctrl+= Ctrl+\- Ctrl+0 e Ctrl+roda
 para zoom. Ctrl+S salva agora. Ctrl+, abre as configurações; Ctrl+Shift+,
 abre o \fIconfig.json\fR numa aba. Ctrl+Q sai.
+.PP
+Com o markdown ao vivo ligado (Ctrl+Shift+M): Ctrl+B e Ctrl+I aplicam negrito
+e itálico; clique em [ ] marca a tarefa; Ctrl+Clique abre links; Enter continua
+listas e citações, e Enter num item vazio encerra a lista. Em tabelas, Tab e
+Shift+Tab alinham as colunas e andam entre as células, Ctrl+setas andam entre as
+células, Enter cria linhas, Ctrl+Enter sai da tabela e Ctrl+Backspace apaga a
+linha.
+Em blocos de código, ```lang + Enter fecha o bloco e o código ganha realce de
+sintaxe.
 .SH ARQUIVOS
 .TP
 .I $XDG_CONFIG_HOME/notas/config.json
@@ -88,7 +97,8 @@ continua valendo.
   "wordWrap": true,
   "theme": { "mode": "auto", "dark": "gruvbox-dark", "light": "gruvbox-light" },
   "radius": { "window": 12, "elements": 8 },
-  "onClose": "archive"
+  "onClose": "archive",
+  "markdown": true
 }
 .fi
 .RE
@@ -97,6 +107,8 @@ continua valendo.
 \fBdark\fR, \fBlight\fR, o nome de um tema ou o caminho de um \fB.json\fR.
 \fBradius.window\fR é o raio dos cantos da janela (0 = cantos retos, útil quando
 o compositor já arredonda); \fBradius.elements\fR vale para abas, painel e busca.
+\fBmarkdown\fR liga a formatação ao vivo (os marcadores só aparecem na linha
+com o cursor; o arquivo continua texto puro).
 \fBonClose\fR aceita \fBarchive\fR (move para \fI.fechadas/\fR) ou \fBdelete\fR.
 Quando \fBnotesDir\fR é alterado à mão, a troca só acontece se a pasta já existir.
 Pelo painel, as notas são movidas para a nova pasta.
@@ -105,7 +117,8 @@ Pelo painel, as notas são movidas para a nova pasta.
 Temas. Na primeira execução são gerados \fIgruvbox-dark.json\fR e
 \fIgruvbox-light.json\fR a partir de \fI~/gruvbox_theme.css\fR. Cores aceitam
 #RGB, #RRGGBB e #RRGGBBAA. Papéis: base, card, surface, surface2, surface3,
-hover, text, textStrong, muted, accent, cursor, selection, search. A chave
+hover, text, textStrong, muted, accent, cursor, selection, search, h1 a h6,
+link, code, codeKeyword, codeType, codeString, codeNumber, codeComment. A chave
 opcional \fBcss\fR é anexada à folha de estilo Qt.
 .TP
 .I <notesDir>/*.txt

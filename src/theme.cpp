@@ -77,6 +77,19 @@ Theme Theme::builtin(bool dark)
         t.muted = pick("grey", "#928374");
         t.accent = pick("yellow2", "#fabd2f");
         t.selection = pick("bg2", "#504945");
+        t.h1 = pick("orange2", "#fe8019");
+        t.h2 = pick("yellow2", "#fabd2f");
+        t.h3 = pick("green2", "#b8bb26");
+        t.h4 = pick("aqua2", "#8ec07c");
+        t.h5 = pick("blue2", "#83a598");
+        t.h6 = pick("purple2", "#d3869b");
+        t.codeKeyword = pick("red2", "#fb4934");
+        t.codeType = t.h2;
+        t.codeString = t.h3;
+        t.codeNumber = t.h6;
+        t.codeComment = pick("grey", "#928374");
+        t.link = pick("blue2", "#83a598");
+        t.code = pick("aqua2", "#8ec07c");
     } else {
         t.name = "gruvbox-light";
         t.base = pick("bg0_soft", "#f2e5bc");
@@ -89,6 +102,19 @@ Theme Theme::builtin(bool dark)
         t.muted = pick("fg4", "#7c6f64");
         t.accent = pick("yellow2", "#b57614");
         t.selection = pick("bg2", "#d5c4a1");
+        t.h1 = pick("orange2", "#af3a03");
+        t.h2 = pick("yellow2", "#b57614");
+        t.h3 = pick("green2", "#79740e");
+        t.h4 = pick("aqua2", "#427b58");
+        t.h5 = pick("blue2", "#076678");
+        t.h6 = pick("purple2", "#8f3f71");
+        t.codeKeyword = pick("red2", "#9d0006");
+        t.codeType = t.h2;
+        t.codeString = t.h3;
+        t.codeNumber = t.h6;
+        t.codeComment = pick("grey", "#928374");
+        t.link = pick("blue2", "#076678");
+        t.code = pick("aqua2", "#427b58");
     }
     t.cursor = t.accent;
     t.search = t.accent;
@@ -98,7 +124,9 @@ Theme Theme::builtin(bool dark)
 }
 
 static const char *kRoles[] = {"base", "card", "surface", "surface2", "surface3", "hover", "text",
-                               "textStrong", "muted", "accent", "cursor", "selection", "search"};
+                               "textStrong", "muted", "accent", "cursor", "selection", "search",
+                               "h1", "h2", "h3", "h4", "h5", "h6", "link", "code",
+                               "codeKeyword", "codeType", "codeString", "codeNumber", "codeComment"};
 
 static QColor *role(Theme &t, const QString &k)
 {
@@ -110,6 +138,13 @@ static QColor *role(Theme &t, const QString &k)
         {"muted", &Theme::muted},       {"accent", &Theme::accent},
         {"cursor", &Theme::cursor},     {"selection", &Theme::selection},
         {"search", &Theme::search},
+        {"h1", &Theme::h1}, {"h2", &Theme::h2}, {"h3", &Theme::h3},
+        {"h4", &Theme::h4}, {"h5", &Theme::h5}, {"h6", &Theme::h6},
+        {"link", &Theme::link},
+        {"codeKeyword", &Theme::codeKeyword}, {"codeType", &Theme::codeType},
+        {"codeString", &Theme::codeString},   {"codeNumber", &Theme::codeNumber},
+        {"codeComment", &Theme::codeComment},
+        {"code", &Theme::code},
     };
     auto it = m.find(k);
     return it == m.end() ? nullptr : &(t.*(*it));

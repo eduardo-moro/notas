@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "editor.h"
+#include "markdown.h"
 #include "settingspanel.h"
 #include "widgets.h"
 
@@ -12,6 +13,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QPainter>
+#include <QRegularExpression>
 #include <QSaveFile>
 #include <QScrollBar>
 #include <QShortcut>
@@ -174,6 +176,11 @@ MainWindow::MainWindow(const AppSettings &s, QWidget *parent) : QWidget(parent),
     sc({K("Ctrl+S")}, [this] { saveEverything(); });
     sc({K("Ctrl+,")}, [this] { toggleSettings(); });
     sc({K("Ctrl+Shift+,"), K("Ctrl+<"), K("Ctrl+Shift+<")}, [this] { openFile(Paths::configFile()); });
+    sc({K("Ctrl+Shift+M")}, [this] {
+        AppSettings ns = m_s;
+        ns.markdown = !ns.markdown;
+        applySettings(ns, false);
+    });
     sc({K("Ctrl+Q")}, [this] { close(); });
 
     applyLook();
@@ -229,7 +236,7 @@ Editor *MainWindow::createTab(const QString &id, const QString &path, const QStr
     ed->applyTheme(m_theme);
 
     connect(&ed->saveTimer, &QTimer::timeout, this, [this, ed] { saveNote(ed); });
-    connect(ed, &QPlainTextEdit::textChanged, this, [this, ed] {
+    connect(ed, &Editor::edited, this, [this, ed] {
         ed->dirty = true;
         ed->saveTimer.start(m_s.autosaveMs);
         updateTabTitle(ed);
@@ -271,6 +278,18 @@ void MainWindow::updateTabTitle(Editor *ed)
             t = b.text().trimmed();
             if (!t.isEmpty())
                 break;
+        }
+        if (m_s.markdown) { // "# Título" / "- [ ] item" -> "Título" / "item"
+            static const QRegularExpression lead(R"(^(#{1,6}\s+|[-*+]\s+(\[[ xX]\]\s+)?|\d+[.)]\s+|>+\s*))");
+            static const QRegularExpression emphasis(R"(\*\*|__|`|~~|(?<!\w)[*_]|[*_](?!\w))");
+            if (MarkdownHighlighter::tableRowRe().match(t).hasMatch()) { // a note that starts with a table
+                const QString cell = MarkdownHighlighter::tableCells(t).value(0).remove(emphasis).trimmed();
+                t = cell.isEmpty() ? QStringLiteral("tabela") : "tabela - " + cell;
+            } else {
+                t.remove(lead);
+                t.remove(emphasis);
+                t = t.trimmed();
+            }
         }
         if (t.isEmpty())
             t = "nova nota";

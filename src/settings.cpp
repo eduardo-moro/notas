@@ -182,6 +182,7 @@ bool AppSettings::load(QString *error)
         elementRadius = qBound(0, o.value("radius").toInt(elementRadius), 40);
     }
     deleteOnClose = o.value("onClose").toString("archive") == "delete";
+    markdown = o.value("markdown").toBool(markdown);
 
     if (!notesDirOverride.isEmpty())
         notesDir = notesDirOverride;
@@ -205,6 +206,7 @@ bool AppSettings::save() const
     o["theme"] = QJsonObject{{"mode", theme}, {"dark", themeDark}, {"light", themeLight}};
     o["radius"] = QJsonObject{{"window", windowRadius}, {"elements", elementRadius}};
     o["onClose"] = deleteOnClose ? "delete" : "archive";
+    o["markdown"] = markdown;
 
     const QByteArray data = QJsonDocument(o).toJson(QJsonDocument::Indented);
     QFile cur(Paths::configFile());

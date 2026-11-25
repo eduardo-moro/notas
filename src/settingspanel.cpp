@@ -96,6 +96,7 @@ SettingsPanel::SettingsPanel(QWidget *parent) : QWidget(parent)
     m_spaces = new QCheckBox("indentar com espaços");
     m_indent = new QCheckBox("manter indentação ao quebrar linha");
     m_wrap = new QCheckBox("quebra de linha automática");
+    m_markdown = new QCheckBox("markdown ao vivo (WYSIWYG)");
     form->addRow(section("Editor"));
     form->addRow("Fonte", m_font);
     form->addRow("Tamanho", m_size);
@@ -105,6 +106,7 @@ SettingsPanel::SettingsPanel(QWidget *parent) : QWidget(parent)
     form->addRow("", m_spaces);
     form->addRow("", m_indent);
     form->addRow("", m_wrap);
+    form->addRow("", m_markdown);
 
     m_theme = new QComboBox;
     m_themeDark = new QComboBox;
@@ -150,6 +152,13 @@ SettingsPanel::SettingsPanel(QWidget *parent) : QWidget(parent)
         {"Ctrl+S", "salvar agora"},
         {"Ctrl+,", "configurações"},
         {"Ctrl+Shift+,", "abrir config.json numa aba"},
+        {"Ctrl+Shift+M", "liga/desliga markdown ao vivo"},
+        {"Ctrl+B  Ctrl+I", "negrito / itálico (markdown)"},
+        {"Clique em [ ]", "marca a tarefa (markdown)"},
+        {"Ctrl+Clique", "abre o link (markdown)"},
+        {"Tab  Ctrl+setas", "anda entre células (tabela)"},
+        {"Ctrl+Enter", "sai da tabela"},
+        {"Ctrl+Backspace", "apaga a linha da tabela"},
         {"Ctrl+Q", "sair"},
     };
     auto *grid = new QGridLayout;
@@ -190,7 +199,7 @@ SettingsPanel::SettingsPanel(QWidget *parent) : QWidget(parent)
     });
     for (QSpinBox *s : {m_autosave, m_size, m_padH, m_padV, m_tab, m_radiusSpin, m_winRadius})
         connect(s, &QSpinBox::valueChanged, this, &SettingsPanel::emitChanged);
-    for (QCheckBox *c : {m_spaces, m_indent, m_wrap})
+    for (QCheckBox *c : {m_spaces, m_indent, m_wrap, m_markdown})
         connect(c, &QCheckBox::toggled, this, &SettingsPanel::emitChanged);
     for (QComboBox *c : {m_theme, m_themeDark, m_themeLight, m_close})
         connect(c, &QComboBox::currentIndexChanged, this, &SettingsPanel::emitChanged);
@@ -229,6 +238,7 @@ void SettingsPanel::open(const AppSettings &s)
     m_spaces->setChecked(s.useSpaces);
     m_indent->setChecked(s.autoIndent);
     m_wrap->setChecked(s.wordWrap);
+    m_markdown->setChecked(s.markdown);
     m_radiusSpin->setValue(s.elementRadius);
     m_winRadius->setValue(s.windowRadius);
     m_close->setCurrentIndex(s.deleteOnClose ? 1 : 0);
@@ -272,6 +282,7 @@ void SettingsPanel::emitChanged()
     m_s.useSpaces = m_spaces->isChecked();
     m_s.autoIndent = m_indent->isChecked();
     m_s.wordWrap = m_wrap->isChecked();
+    m_s.markdown = m_markdown->isChecked();
     m_s.elementRadius = m_radiusSpin->value();
     m_s.windowRadius = m_winRadius->value();
     m_s.deleteOnClose = m_close->currentData().toString() == "delete";

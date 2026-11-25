@@ -5,6 +5,7 @@
 #include <QTimer>
 #include <functional>
 
+class MarkdownHighlighter;
 struct AppSettings;
 struct Theme;
 
@@ -42,6 +43,7 @@ public:
 
 signals:
     void zoomRequested(int delta);
+    void edited(); // the text really changed (textChanged also fires for markdown formatting)
 
 protected:
     void keyPressEvent(QKeyEvent *e) override;
@@ -66,6 +68,34 @@ private:
     bool m_applying = false; // changes made by undo/redo/load aren't recorded
     bool m_turnOpen = false; // changes in the same event-loop turn form one step
     bool m_breakMerge = false;
+
+    // markdown live preview
+    MarkdownHighlighter *m_md;
+    bool m_formatOnly = false; // highlighter re-formatting: not a text change
+    void updateActiveBlocks();
+    bool markdownNewline(QTextCursor &c);
+    bool markdownClick(QMouseEvent *e);
+    void wrapSelection(const QString &marker);
+    bool inCodeBlock(const QTextBlock &b) const;
+    bool isTableLine(const QTextBlock &b) const;
+
+    // tables: align columns, move between cells
+    struct TableInfo { int first = -1, last = -1, sepRow = -1; QString indent; QList<int> widths; };
+    TableInfo formatTable(const QTextBlock &inside);
+    int cellAt(const QString &row, int col) const;
+    QTextCursor cellCursor(const TableInfo &t, int row, int cell) const;
+    void tableTab(bool back);
+    void tableEnter();
+    void tableLeave();
+    bool tableArrow(int key); // Ctrl+arrows: cell navigation; false = not applicable here
+    void tableDeleteRow(bool keepColumn);
+    QTextCursor cursorInCell(const QTextBlock &b, int cell) const;
+    QString emptyRow(const TableInfo &t) const;
+
+    // painting behind / over the text
+    void paintMarkdownUnder(QPainter &p);
+    void paintMarkdownOver(QPainter &p);
+    QColor m_codeBg, m_ruleColor;
 
     void edit(const std::function<void(QTextCursor &)> &fn);
     void move(QTextCursor::MoveOperation op, bool shift);

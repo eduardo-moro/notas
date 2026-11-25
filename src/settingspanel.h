@@ -39,6 +39,6 @@ private:
     QLineEdit *m_dir;
     QSpinBox *m_autosave, *m_size, *m_padH, *m_padV, *m_tab, *m_radiusSpin, *m_winRadius;
     QFontComboBox *m_font;
-    QCheckBox *m_spaces, *m_indent, *m_wrap;
+    QCheckBox *m_spaces, *m_indent, *m_wrap, *m_markdown;
     QComboBox *m_theme, *m_themeDark, *m_themeLight, *m_close;
 };

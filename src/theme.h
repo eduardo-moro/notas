@@ -10,6 +10,8 @@ struct Theme {
     bool dark = true;
     QColor base, card, surface, surface2, surface3, hover;
     QColor text, textStrong, muted, accent, cursor, selection, search;
+    QColor h1, h2, h3, h4, h5, h6, link, code;                          // markdown
+    QColor codeKeyword, codeType, codeString, codeNumber, codeComment; // code blocks
     QString extraCss;
 
     // Built-in palette, derived from ~/gruvbox_theme.css when present.

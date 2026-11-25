@@ -20,7 +20,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#define NOTAS_VERSION "1.1.0"
+#define NOTAS_VERSION "1.2.0"
 
 static int g_sigFd[2];
 

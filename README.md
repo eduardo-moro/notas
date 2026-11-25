@@ -15,6 +15,12 @@ Não tem menus nem barras: a interface é só o texto. As configurações abrem 
 - **Abas persistentes**: cada aba é um `.txt` na pasta das notas e continua lá entre execuções até você fechar com `Ctrl+W` ou no `×`. `Ctrl+Shift+T` reabre as abas fechadas, da mais recente para a mais antiga, sem limite de histórico.
 - **Ctrl+Z que sobrevive ao fechamento**: o histórico de desfazer/refazer de cada nota é salvo em disco junto com o texto, então dá para desfazer edições de ontem depois de reiniciar o app ou o computador.
 - **Salvamento automático** depois de um tempo sem digitar (1 s por padrão). Sem diálogos de "salvar como".
+- **Markdown ao vivo (WYSIWYG)**: títulos, negrito, itálico, `código`, links, listas, tarefas e citações aparecem formatados enquanto você escreve. Os marcadores ficam escondidos e só aparecem na linha em edição, como no Obsidian. O arquivo continua sendo texto puro. Liga e desliga com `Ctrl+Shift+M`.
+  - **Tabelas**: `Tab`/`Shift+Tab` alinham as colunas e andam entre as células, e `Enter` cria linhas (e o separador do cabeçalho).
+  - **Blocos de código** com fundo próprio e realce de sintaxe (C/C++, Python, JS/TS, Go, Rust, Java/Kotlin, shell, SQL, Lua, JSON, YAML). ```` ```lang ```` + `Enter` fecha o bloco sozinho.
+  - **Títulos** com uma cor por nível, e `---` vira um divisor que ocupa a linha inteira.
+  - **Tabelas limpas**: sem linhas de grade, as colunas se alinham pelas palavras.
+  - O título da aba ignora a marcação (`# Compras` vira "Compras"), e uma nota que começa com uma tabela vira "tabela - <primeira célula>".
 - **Multi-cursor estilo VSCode**: `Alt+Shift+↑/↓`, `Alt+Clique`, `Ctrl+D`, `Ctrl+Shift+L`.
 - **Edição por linha**: mover, duplicar, apagar e selecionar linhas, Tab e Shift+Tab indentam, Home inteligente, auto-indentação.
 - **Temas em JSON** (Gruvbox claro e escuro inclusos). No modo `auto` o tema segue o claro/escuro do sistema.
@@ -89,6 +95,15 @@ Só existe uma janela por usuário: chamar `notas` com o app já aberto repassa 
 | `Ctrl+S` | salvar agora |
 | `Ctrl+,` | configurações |
 | `Ctrl+Shift+,` | abrir o `config.json` numa aba |
+| `Ctrl+Shift+M` | liga/desliga o markdown ao vivo |
+| `Ctrl+B` / `Ctrl+I` | negrito / itálico (markdown) |
+| clique em `[ ]` | marca/desmarca a tarefa (markdown) |
+| `Ctrl+Clique` | abre o link (markdown) |
+| `Tab` / `Shift+Tab` numa tabela | alinha as colunas e vai para a próxima / anterior célula |
+| `Enter` numa tabela | nova linha (numa linha vazia, sai da tabela) |
+| `Ctrl+←/→/↑/↓` numa tabela | anda entre as células |
+| `Ctrl+Enter` numa tabela | alinha e sai da tabela |
+| `Ctrl+Backspace` numa tabela | apaga a linha da tabela |
 | `Ctrl+Q` | sair |
 
 Arrastar o espaço vazio ao lado das abas move a janela, e um duplo clique ali abre uma aba nova. Clicar com o botão do meio numa aba fecha a aba.
@@ -107,13 +122,15 @@ Arrastar o espaço vazio ao lado das abas move a janela, e um duplo clique ali a
     "wordWrap": true,
     "theme": { "mode": "auto", "dark": "gruvbox-dark", "light": "gruvbox-light" },
     "radius": { "window": 12, "elements": 8 },
-    "onClose": "archive"
+    "onClose": "archive",
+    "markdown": true
 }
 ```
 
 - O app recarrega o arquivo assim que ele muda no disco. Se houver erro de sintaxe, o aviso vai para o stderr e a última configuração válida continua valendo.
 - `theme.mode`: `auto`, `dark`, `light`, o nome de um tema ou o caminho de um `.json`. No `auto`, o app lê `~/.config/hypr/.current-theme` (`dark`/`light`) e troca sozinho quando esse arquivo muda.
 - `radius.window`: cantos da janela. Use `0` se o compositor já arredonda as janelas.
+- `markdown`: formatação ao vivo. Com ela ligada, `Enter` continua listas (`-`, `1.`, `- [ ]`) e citações, `Enter` num item vazio encerra a lista, e `[] ` no começo da linha vira `- [ ] `.
 - `onClose`: `archive` move a nota fechada para `.fechadas/` (pode ser reaberta), e `delete` apaga o arquivo.
 
 ## Temas
@@ -135,7 +152,7 @@ Os temas ficam em `~/.config/notas/themes/*.json`. Na primeira execução são c
 }
 ```
 
-As cores aceitam `#RGB`, `#RRGGBB` e `#RRGGBBAA`. Uma cor que você não definir vem do tema embutido. O campo `css` é anexado à folha de estilo Qt, para ajustes finos. Se existir um `~/gruvbox_theme.css` no formato de paleta, os temas iniciais são gerados a partir dele.
+Para o markdown existem também `h1` … `h6` (títulos), `link`, `code` (código inline) e, para os blocos de código, `codeKeyword`, `codeType`, `codeString`, `codeNumber` e `codeComment`. As cores aceitam `#RGB`, `#RRGGBB` e `#RRGGBBAA`. Uma cor que você não definir vem do tema embutido. O campo `css` é anexado à folha de estilo Qt, para ajustes finos. Se existir um `~/gruvbox_theme.css` no formato de paleta, os temas iniciais são gerados a partir dele.
 
 ## Arquivos
 
