@@ -12,7 +12,8 @@ Não tem menus nem barras: a interface é só o texto. As configurações abrem 
 
 ## Recursos
 
-- **Abas persistentes**: cada aba é um `.txt` na pasta das notas e continua lá entre execuções até você fechar com `Ctrl+W` ou no `×`. `Ctrl+Shift+T` reabre a última aba fechada.
+- **Abas persistentes**: cada aba é um `.txt` na pasta das notas e continua lá entre execuções até você fechar com `Ctrl+W` ou no `×`. `Ctrl+Shift+T` reabre as abas fechadas, da mais recente para a mais antiga, sem limite de histórico.
+- **Ctrl+Z que sobrevive ao fechamento**: o histórico de desfazer/refazer de cada nota é salvo em disco junto com o texto, então dá para desfazer edições de ontem depois de reiniciar o app ou o computador.
 - **Salvamento automático** depois de um tempo sem digitar (1 s por padrão). Sem diálogos de "salvar como".
 - **Multi-cursor estilo VSCode**: `Alt+Shift+↑/↓`, `Alt+Clique`, `Ctrl+D`, `Ctrl+Shift+L`.
 - **Edição por linha**: mover, duplicar, apagar e selecionar linhas, Tab e Shift+Tab indentam, Home inteligente, auto-indentação.
@@ -63,7 +64,8 @@ Só existe uma janela por usuário: chamar `notas` com o app já aberto repassa 
 |---|---|
 | `Ctrl+T` / `Ctrl+N` | nova aba |
 | `Ctrl+W` | fechar aba |
-| `Ctrl+Shift+T` | reabrir aba fechada |
+| `Ctrl+Shift+T` | reabrir aba fechada (sem limite, com o histórico de desfazer) |
+| `Ctrl+Z` / `Ctrl+Shift+Z` / `Ctrl+Y` | desfazer / refazer (persistente) |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | próxima / anterior aba |
 | `Ctrl+PgDn` / `Ctrl+PgUp` | próxima / anterior aba |
 | `Ctrl+Shift+PgDn/PgUp` | mover aba |
@@ -144,8 +146,19 @@ As cores aceitam `#RGB`, `#RRGGBB` e `#RRGGBBAA`. Uma cor que você não definir
 | `<notesDir>/*.txt` | as notas (UTF-8) |
 | `<notesDir>/.session.json` | ordem das abas, aba atual, cursores |
 | `<notesDir>/.fechadas/` | notas fechadas |
+| `~/.local/state/notas/historico/` | histórico de desfazer de cada nota (`$XDG_STATE_HOME`) |
 
 Qualquer `.txt` colocado na pasta das notas vira uma aba.
+
+O histórico de desfazer guarda um hash do texto. Se a nota for alterada por outro programa, o histórico antigo é descartado em vez de ser aplicado sobre um texto diferente.
+
+## Testes
+
+```sh
+qmake6 -o build/tests/Makefile tests/tests.pro
+make -C build/tests -j$(nproc)
+build/tests/tst_notas -platform offscreen
+```
 
 ## Licença
 

@@ -27,6 +27,24 @@ static bool moveFile(const QString &src, const QString &dst)
     return QFile::copy(src, dst) && QFile::remove(src); // across filesystems
 }
 
+// the undo history follows its note when the file is moved/archived/deleted
+static void moveHistory(const QString &from, const QString &to)
+{
+    const QString src = Paths::historyFile(from);
+    if (!QFile::exists(src))
+        return;
+    const QString dst = Paths::historyFile(to);
+    QFile::remove(dst);
+    moveFile(src, dst);
+}
+
+static void loadHistory(Editor *ed, const QString &path)
+{
+    QFile f(Paths::historyFile(path));
+    if (f.open(QIODevice::ReadOnly))
+        ed->restoreHistory(QJsonDocument::fromJson(f.readAll()).object());
+}
+
 MainWindow::MainWindow(const AppSettings &s, QWidget *parent) : QWidget(parent), m_s(s)
 {
     setWindowTitle("Notas");
@@ -205,8 +223,8 @@ Editor *MainWindow::createTab(const QString &id, const QString &path, const QStr
     auto *ed = new Editor;
     ed->noteId = id;
     ed->filePath = path;
-    ed->setPlainText(text);
-    ed->document()->clearUndoRedoStacks();
+    ed->loadContent(text);
+    loadHistory(ed, pathOf(ed));
     ed->applySettings(m_s);
     ed->applyTheme(m_theme);
 
@@ -271,8 +289,8 @@ void MainWindow::newTab(const QString &text)
     const int idx = m_tabs->currentIndex() + 1;
     Editor *ed = createTab(newId(), QString(), QString(), idx);
     if (!text.isEmpty()) {
-        ed->setPlainText(text);
-        ed->document()->clearUndoRedoStacks();
+        ed->loadContent(text);
+        ed->dirty = true;
         saveNote(ed);
     }
     m_tabs->setCurrentIndex(m_stack->indexOf(ed));
@@ -291,16 +309,16 @@ void MainWindow::closeTab(int i)
         if (QFile::exists(path)) {
             if (ed->toPlainText().trimmed().isEmpty() || m_s.deleteOnClose) {
                 QFile::remove(path);
+                QFile::remove(Paths::historyFile(path));
             } else {
                 const QString dir = Store::closedDir(m_s.notesDir);
                 QDir().mkpath(dir);
                 const QString dst = Store::notePath(dir, ed->noteId);
                 QFile::remove(dst);
                 if (moveFile(path, dst)) {
+                    moveHistory(path, dst);
                     m_closed.removeAll(ed->noteId);
-                    m_closed.append(ed->noteId);
-                    while (m_closed.size() > 100)
-                        m_closed.removeFirst();
+                    m_closed.append(ed->noteId); // no limit: every closed tab can be reopened
                 }
             }
         }
@@ -325,6 +343,7 @@ void MainWindow::reopenClosed()
             id = newId();
         if (!moveFile(src, Store::notePath(m_s.notesDir, id)))
             continue;
+        moveHistory(src, Store::notePath(m_s.notesDir, id)); // before createTab, which loads it
         Editor *ed = createTab(id, QString(), Store::readText(Store::notePath(m_s.notesDir, id)),
                                m_tabs->currentIndex() + 1);
         m_tabs->setCurrentIndex(m_stack->indexOf(ed));
@@ -355,7 +374,7 @@ void MainWindow::openFile(const QString &path)
 void MainWindow::saveNote(Editor *ed)
 {
     ed->saveTimer.stop();
-    if (!ed->dirty)
+    if (!ed->dirty && !ed->historyDirty)
         return;
     const QString path = pathOf(ed);
     const QString text = ed->toPlainText();
@@ -371,8 +390,21 @@ void MainWindow::saveNote(Editor *ed)
         if (f.commit())
             ed->dirty = false;
     }
-    if (ed->dirty)
+    if (ed->dirty) {
         warn(QString("não foi possível salvar %1: %2").arg(path, f.errorString()));
+    } else if (ed->historyDirty) {
+        // saved right after the text, so the history's hash matches what's on disk
+        const QString hp = Paths::historyFile(path);
+        QDir().mkpath(QFileInfo(hp).absolutePath());
+        QSaveFile h(hp);
+        if (h.open(QIODevice::WriteOnly)) {
+            h.write(QJsonDocument(ed->historyJson()).toJson(QJsonDocument::Compact));
+            if (h.commit())
+                ed->historyDirty = false;
+        }
+        if (ed->historyDirty)
+            warn(QString("não foi possível salvar o histórico de %1: %2").arg(path, h.errorString()));
+    }
     updateTabTitle(ed);
 }
 
@@ -487,11 +519,14 @@ void MainWindow::switchNotesDir(const QString &dir, bool moveFiles)
                 ed->noteId += "-" + QDateTime::currentDateTime().toString("HHmmsszzz");
             if (!moveFile(src, Store::notePath(dir, ed->noteId)))
                 warn(QString("não foi possível mover %1").arg(src));
+            else
+                moveHistory(src, Store::notePath(dir, ed->noteId));
         }
         const QString oldClosed = Store::closedDir(old), newClosed = Store::closedDir(dir);
         for (const QString &id : std::as_const(m_closed)) {
             QDir().mkpath(newClosed);
-            moveFile(Store::notePath(oldClosed, id), Store::notePath(newClosed, id));
+            if (moveFile(Store::notePath(oldClosed, id), Store::notePath(newClosed, id)))
+                moveHistory(Store::notePath(oldClosed, id), Store::notePath(newClosed, id));
         }
         QFile::remove(old + "/.session.json");
         QDir().rmdir(oldClosed); // only succeeds if empty

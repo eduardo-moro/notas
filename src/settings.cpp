@@ -1,4 +1,5 @@
 #include "settings.h"
+#include <QCryptographicHash>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -30,6 +31,13 @@ QString Paths::configDir() { return xdg("XDG_CONFIG_HOME", "/.config") + "/notas
 QString Paths::configFile() { return s_configFile.isEmpty() ? configDir() + "/config.json" : s_configFile; }
 void Paths::setConfigFile(const QString &path) { s_configFile = QFileInfo(expand(path)).absoluteFilePath(); }
 QString Paths::themesDir() { return configDir() + "/themes"; }
+
+QString Paths::historyFile(const QString &filePath)
+{
+    const QByteArray key = QCryptographicHash::hash(QFileInfo(filePath).absoluteFilePath().toUtf8(),
+                                                    QCryptographicHash::Sha1).toHex();
+    return xdg("XDG_STATE_HOME", "/.local/state") + "/notas/historico/" + QString::fromLatin1(key) + ".json";
+}
 
 QString Paths::socketPath()
 {

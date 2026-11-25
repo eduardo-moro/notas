@@ -3,6 +3,11 @@
 #include "theme.h"
 
 #include <QApplication>
+#include <QContextMenuEvent>
+#include <QCryptographicHash>
+#include <QDateTime>
+#include <QJsonArray>
+#include <QMenu>
 #include <QClipboard>
 #include <QMimeData>
 #include <QPainter>
@@ -27,6 +32,9 @@ Editor::Editor(QWidget *parent) : QPlainTextEdit(parent)
         viewport()->update();
     });
     connect(this, &QPlainTextEdit::cursorPositionChanged, this, &Editor::resetBlink);
+
+    setUndoRedoEnabled(false); // replaced by our own, persistable history
+    connect(document(), &QTextDocument::contentsChange, this, [this](int, int, int) { onContentsChange(); });
 }
 
 void Editor::applySettings(const AppSettings &s)
@@ -688,6 +696,9 @@ void Editor::keyPressEvent(QKeyEvent *e)
         return;
     }
 
+    if (e->matches(QKeySequence::Undo)) { undo(); return; }
+    if (e->matches(QKeySequence::Redo) || (ctrl && !shift && !alt && key == Qt::Key_Y)) { redo(); return; }
+
     if (vert && alt && shift && !ctrl) { addCursorVertical(dir); return; }
     if (vert && alt && shift && ctrl) { duplicateLines(dir); return; }
     if (vert && alt && !shift && !ctrl) { moveLines(dir); return; }
@@ -849,4 +860,203 @@ void Editor::showEvent(QShowEvent *e)
         pendingScroll = -1;
         QTimer::singleShot(0, this, [this, v] { verticalScrollBar()->setValue(v); });
     }
+}
+
+// ------------------------------------------------------------ persistent undo history
+
+static QString textHash(const QString &s)
+{
+    return QString::fromLatin1(QCryptographicHash::hash(s.toUtf8(), QCryptographicHash::Sha1).toHex());
+}
+
+void Editor::loadContent(const QString &text)
+{
+    m_applying = true;
+    setPlainText(text);
+    m_applying = false;
+    m_shadow = toPlainText();
+    m_undo.clear();
+    m_redo.clear();
+    historyDirty = false;
+}
+
+void Editor::onContentsChange()
+{
+    const QString now = toPlainText();
+    if (m_applying) {
+        m_shadow = now;
+        return;
+    }
+    // minimal diff between the previous and the new text (Qt's own counts are off at document end)
+    const QString &old = m_shadow;
+    const int ol = old.size(), nl = now.size();
+    int p = 0;
+    while (p < ol && p < nl && old[p] == now[p])
+        ++p;
+    int s = 0;
+    while (s < ol - p && s < nl - p && old[ol - 1 - s] == now[nl - 1 - s])
+        ++s;
+    if (p == ol && p == nl)
+        return; // formatting only
+    Op op{p, old.mid(p, ol - p - s), now.mid(p, nl - p - s)};
+    m_shadow = now;
+    m_redo.clear();
+    historyDirty = true;
+
+    const qint64 t = QDateTime::currentMSecsSinceEpoch();
+
+    // consecutive typing / backspace / delete become a single undo step, like in VSCode
+    auto tryMerge = [&op, t](Step &st) {
+        if (st.ops.size() != 1 || t - st.time > 1500)
+            return false;
+        Op &l = st.ops.last();
+        const bool typing = op.removed.isEmpty() && op.added.size() == 1 && op.added[0] != '\n' &&
+                            l.removed.isEmpty() && !l.added.isEmpty() && !l.added.contains('\n') &&
+                            op.pos == l.pos + l.added.size() &&
+                            !(op.added[0].isSpace() && !l.added.back().isSpace()); // a new word starts a new step
+        if (typing) {
+            l.added += op.added;
+        } else if (op.added.isEmpty() && op.removed.size() == 1 && l.added.isEmpty() && !l.removed.isEmpty() &&
+                   op.pos + 1 == l.pos) { // backspace
+            l.pos = op.pos;
+            l.removed.prepend(op.removed);
+        } else if (op.added.isEmpty() && op.removed.size() == 1 && l.added.isEmpty() && !l.removed.isEmpty() &&
+                   op.pos == l.pos) { // delete
+            l.removed += op.removed;
+        } else {
+            return false;
+        }
+        st.time = t;
+        return true;
+    };
+
+    if (m_turnOpen && !m_undo.isEmpty()) { // same event-loop turn: same step
+        if (!tryMerge(m_undo.last()))
+            m_undo.last().ops << op;
+        return;
+    }
+    m_turnOpen = true;
+    QTimer::singleShot(0, this, [this] { m_turnOpen = false; });
+
+    const bool mayMerge = !m_breakMerge && !m_undo.isEmpty();
+    m_breakMerge = false;
+    if (mayMerge && tryMerge(m_undo.last()))
+        return;
+    m_undo.append(Step{{op}, t});
+}
+
+void Editor::applyStep(const Step &st, bool undo)
+{
+    m_applying = true;
+    QTextCursor c(document());
+    c.beginEditBlock();
+    if (undo) {
+        for (int i = st.ops.size() - 1; i >= 0; --i) {
+            const Op &o = st.ops[i];
+            c.setPosition(o.pos);
+            c.setPosition(o.pos + o.added.size(), QTextCursor::KeepAnchor);
+            c.insertText(o.removed);
+        }
+    } else {
+        for (const Op &o : st.ops) {
+            c.setPosition(o.pos);
+            c.setPosition(o.pos + o.removed.size(), QTextCursor::KeepAnchor);
+            c.insertText(o.added);
+        }
+    }
+    c.endEditBlock();
+    m_applying = false;
+    m_shadow = toPlainText();
+    m_breakMerge = true;
+    historyDirty = true;
+
+    // a cursor at the end of each restored change
+    const int max = document()->characterCount() - 1;
+    QList<QTextCursor> cs;
+    for (const Op &o : st.ops) {
+        QTextCursor k(document());
+        k.setPosition(qBound(0, o.pos + int(undo ? o.removed.size() : o.added.size()), max));
+        cs << k;
+    }
+    setAllCursors(cs, cs.size() - 1);
+}
+
+void Editor::undo()
+{
+    if (m_undo.isEmpty())
+        return;
+    const Step st = m_undo.takeLast();
+    applyStep(st, true);
+    m_redo.append(st);
+}
+
+void Editor::redo()
+{
+    if (m_redo.isEmpty())
+        return;
+    const Step st = m_redo.takeLast();
+    applyStep(st, false);
+    m_undo.append(st);
+}
+
+QJsonObject Editor::historyJson() const
+{
+    auto enc = [](const QList<Step> &steps) {
+        QJsonArray a;
+        for (const Step &st : steps) {
+            QJsonArray ops;
+            for (const Op &o : st.ops)
+                ops.append(QJsonArray{o.pos, o.removed, o.added});
+            a.append(QJsonObject{{"t", st.time}, {"ops", ops}});
+        }
+        return a;
+    };
+    return QJsonObject{{"version", 1}, {"hash", textHash(m_shadow)}, {"undo", enc(m_undo)}, {"redo", enc(m_redo)}};
+}
+
+bool Editor::restoreHistory(const QJsonObject &o)
+{
+    if (o.value("version").toInt() != 1 || o.value("hash").toString() != textHash(m_shadow))
+        return false; // edited outside the app (or no history): positions would be meaningless
+    auto dec = [](const QJsonArray &a, QList<Step> &out) {
+        for (const auto &v : a) {
+            Step st;
+            st.time = v.toObject().value("t").toInteger();
+            for (const auto &ov : v.toObject().value("ops").toArray()) {
+                const QJsonArray x = ov.toArray();
+                if (x.size() != 3)
+                    return false;
+                st.ops.append(Op{x[0].toInt(), x[1].toString(), x[2].toString()});
+            }
+            if (!st.ops.isEmpty())
+                out.append(st);
+        }
+        return true;
+    };
+    QList<Step> u, r;
+    if (!dec(o.value("undo").toArray(), u) || !dec(o.value("redo").toArray(), r))
+        return false;
+    m_undo = u;
+    m_redo = r;
+    m_breakMerge = true;
+    historyDirty = false;
+    return true;
+}
+
+void Editor::contextMenuEvent(QContextMenuEvent *e)
+{
+    QMenu *m = createStandardContextMenu();
+    for (QAction *a : m->actions()) {
+        if (a->objectName() == "edit-undo") {
+            a->disconnect();
+            a->setEnabled(!m_undo.isEmpty());
+            connect(a, &QAction::triggered, this, &Editor::undo);
+        } else if (a->objectName() == "edit-redo") {
+            a->disconnect();
+            a->setEnabled(!m_redo.isEmpty());
+            connect(a, &QAction::triggered, this, &Editor::redo);
+        }
+    }
+    m->exec(e->globalPos());
+    delete m;
 }

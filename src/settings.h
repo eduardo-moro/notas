@@ -12,6 +12,8 @@ QString configFile();
 void setConfigFile(const QString &path);
 QString themesDir();
 QString socketPath();
+// undo history of a file: $XDG_STATE_HOME/notas/historico/<sha1 of the absolute path>.json
+QString historyFile(const QString &filePath);
 QString expand(const QString &p);   // "~/x" -> "/home/u/x"
 QString contract(const QString &p); // "/home/u/x" -> "~/x"
 }

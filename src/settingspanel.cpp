@@ -125,6 +125,7 @@ SettingsPanel::SettingsPanel(QWidget *parent) : QWidget(parent)
         {"Ctrl+T  Ctrl+N", "nova aba"},
         {"Ctrl+W", "fechar aba"},
         {"Ctrl+Shift+T", "reabrir aba fechada"},
+        {"Ctrl+Z  Ctrl+Shift+Z", "desfazer / refazer (persistente)"},
         {"Ctrl+Tab  Ctrl+PgDn", "próxima aba"},
         {"Ctrl+Shift+Tab  Ctrl+PgUp", "aba anterior"},
         {"Ctrl+Shift+PgUp/PgDn", "mover aba"},

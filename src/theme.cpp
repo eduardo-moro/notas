@@ -270,6 +270,12 @@ QCheckBox { color: {text}; spacing: 8px; background: transparent; }
 QCheckBox::indicator { width: 14px; height: 14px; border-radius: 4px; border: 1px solid {surface3}; background: {base}; }
 QCheckBox::indicator:checked { background: {accent}; border: 1px solid {accent}; }
 
+QMenu { background: {card}; color: {text}; border: 1px solid {surface}; border-radius: 6px; padding: 4px; }
+QMenu::item { padding: 5px 18px; border-radius: 4px; }
+QMenu::item:selected { background: {surface}; color: {textStrong}; }
+QMenu::item:disabled { color: {muted}; }
+QMenu::separator { height: 1px; background: {surface}; margin: 4px 6px; }
+
 QPushButton { background: {surface}; color: {text}; border: none; border-radius: 6px; padding: 5px 12px; }
 QPushButton:hover { background: {surface2}; }
 

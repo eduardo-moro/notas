@@ -1,4 +1,4 @@
-.TH NOTAS 1 "novembro de 2026" "notas 1.0.0" "Comandos do usuário"
+.TH NOTAS 1 "novembro de 2026" "notas 1.1.0" "Comandos do usuário"
 .SH NOME
 notas \- bloco de notas minimalista com abas e salvamento automático
 .SH SINOPSE
@@ -52,7 +52,8 @@ Mostra a ajuda.
 .BR \-v ", " \-\-version
 Mostra a versão.
 .SH ATALHOS
-Ctrl+T, Ctrl+N nova aba; Ctrl+W fechar; Ctrl+Shift+T reabrir aba fechada;
+Ctrl+T, Ctrl+N nova aba; Ctrl+W fechar; Ctrl+Shift+T reabrir aba fechada (sem limite);
+Ctrl+Z e Ctrl+Shift+Z/Ctrl+Y desfazem e refazem, inclusive depois de reiniciar o app;
 Ctrl+Tab/Ctrl+PgDn e Ctrl+Shift+Tab/Ctrl+PgUp trocar de aba;
 Ctrl+Shift+PgUp/PgDn mover aba; Alt+1..9 ir para aba.
 .PP
@@ -114,7 +115,11 @@ As notas, uma por arquivo, em UTF-8.
 Ordem das abas, aba atual, posição do cursor e lista de notas fechadas.
 .TP
 .I <notesDir>/.fechadas/
-Notas fechadas, que podem ser reabertas com Ctrl+Shift+T.
+Notas fechadas, que podem ser reabertas com Ctrl+Shift+T, sem limite.
+.TP
+.I $XDG_STATE_HOME/notas/historico/
+Histórico de desfazer/refazer de cada nota, que sobrevive ao fechamento do
+app. É descartado se a nota for alterada por outro programa.
 .SH SINAIS
 SIGTERM, SIGINT e SIGHUP salvam todas as abas e a sessão antes de sair.
 .SH STATUS DE SAÍDA

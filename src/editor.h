@@ -1,4 +1,5 @@
 #pragma once
+#include <QJsonObject>
 #include <QPlainTextEdit>
 #include <QTextBlock>
 #include <QTimer>
@@ -22,6 +23,14 @@ public:
     int pendingScroll = -1;
     QTimer saveTimer;
 
+    // Undo history that survives restarts (Qt's own undo stack can't be serialized).
+    void loadContent(const QString &text); // replaces the text without an undo step; fresh history
+    void undo();
+    void redo();
+    QJsonObject historyJson() const;
+    bool restoreHistory(const QJsonObject &o); // false if it doesn't belong to the current text
+    bool historyDirty = false;
+
     QList<QTextCursor> allCursors() const;
     void setAllCursors(QList<QTextCursor> cs, int primary = 0);
     void clearExtraCursors();
@@ -42,9 +51,21 @@ protected:
     void focusInEvent(QFocusEvent *e) override;
     void focusOutEvent(QFocusEvent *e) override;
     void showEvent(QShowEvent *e) override;
+    void contextMenuEvent(QContextMenuEvent *e) override;
 
 private:
     struct Group { int first, last; };
+
+    // one recorded change and one undo step (a step may hold several changes)
+    struct Op { int pos; QString removed, added; };
+    struct Step { QList<Op> ops; qint64 time = 0; };
+    void onContentsChange();
+    void applyStep(const Step &s, bool undo);
+    QList<Step> m_undo, m_redo;
+    QString m_shadow;       // text before the latest change, to compute what was removed
+    bool m_applying = false; // changes made by undo/redo/load aren't recorded
+    bool m_turnOpen = false; // changes in the same event-loop turn form one step
+    bool m_breakMerge = false;
 
     void edit(const std::function<void(QTextCursor &)> &fn);
     void move(QTextCursor::MoveOperation op, bool shift);
